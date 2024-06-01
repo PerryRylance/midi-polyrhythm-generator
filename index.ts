@@ -1,65 +1,71 @@
-import { File, Track, NoteOnEvent, NoteOffEvent, ControlEvent, EndOfTrackEvent, WriteStream } from "@perry-rylance/midi";
 
-type WithAbsolute<T> = T & { absolute?: number };
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
+import yargonaut from "yargonaut";
+import Generator from "./src/Generator";
 
-const file = new File();
-const track = new Track();
+yargonaut
+    .helpStyle('green')
+    .errorsStyle('red.bold');
 
-file.tracks.push(track);
+const argv = yargs(hideBin(process.argv))
+	.option("count", {
+		alias: "c",
+		describe: "Number of root events to generate",
+		type: "number",
+		demandOption: true,
+		requiresArg: true
+	})
+	.option("layers", {
+		alias: "l",
+		describe: "Number of layers to generate",
+		type: "number",
+		demandOption: true,
+		requiresArg: true
+	})
+	.option("push", {
+		alias: "p",
+		describe: "Number of events to push per layer",
+		type: "number",
+		default: 1,
+		requiresArg: true
+	})
+	.option("window", {
+		alias: "w",
+		describe: "Window between events to sustain for, 0.0 is instantaneous notes, 1.0 is no gaps",
+		type: "number",
+		default: 0.5,
+		requiresArg: true
+	})
+	.option("intervals", {
+		alias: "i",
+		describe: "Semitones to increment per layer, supports negative and comma-separated values",
+		type: "string",
+		default: "1",
+		requiresArg: true
+	})
+	.option("duration", {
+		alias: "d",
+		describe: "Duration between root layer note-on events",
+		type: "number",
+		default: 480,
+		requiresArg: true
+	})
+	.option("root", {
+		alias: "r",
+		describe: "MIDI pitch of the root note",
+		default: 60,
+		requiresArg: true
+	})
+	.option("output", {
+		alias: "o",
+		describe: "File to output to",
+		default: "stdout",
+		type: "string",
+		requiresArg: true
+	})
+	.parseSync();
 
-const sustain = file.resolution.ticksPerQuarterNote / 8;
-const duration = file.resolution.ticksPerQuarterNote * 4 * 128; // NB: 128 bars
-const increment = (Math.SQRT2 - 1) / 100;
-let index = 0;
+const generator = new Generator();
 
-const events: WithAbsolute<ControlEvent>[] = [];
-
-for(let pitch = 84; pitch >= 48; pitch -= 2)
-{
-	const length = file.resolution.ticksPerQuarterNote * 2;
-	const gap = length + (length * (increment * index));
-
-	index++;
-
-	let cursor = 0;
-
-	while(cursor < duration)
-	{
-		const on: WithAbsolute<NoteOnEvent> = new NoteOnEvent();
-		on.key = pitch;
-		on.absolute = cursor;
-
-		events.push(on);
-
-		cursor += sustain;
-
-		const off: WithAbsolute<NoteOffEvent> = new NoteOffEvent();
-		off.key = pitch;
-		off.absolute = cursor;
-
-		events.push(off);
-
-		cursor += (gap - sustain);
-	}
-}
-
-events.sort((a, b) => a.absolute! - b.absolute!);
-
-let prev = 0;
-
-events.forEach(event => {
-
-	event.delta = Math.round(event.absolute! - prev);
-	prev = event.absolute!;
-
-});
-
-track.events = events;
-
-track.events.push(new EndOfTrackEvent());
-
-const stream = new WriteStream();
-
-file.writeBytes(stream);
-
-process.stdout.write(new Uint8Array(stream.toArrayBuffer()));
+generator.generate(argv);

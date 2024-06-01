@@ -1,6 +1,15 @@
 {
-  "dependencies": {
-    "@perry-rylance/midi": "^1.1.0",
-    "@types/node": "^20.12.12"
-  }
+	"scripts": {
+		"generate": "tsx ./index.ts"
+	},
+	"dependencies": {
+		"@perry-rylance/midi": "^1.1.0",
+		"@types/node": "^20.12.12",
+		"yargonaut": "^1.1.4",
+		"yargs": "^17.7.2"
+	},
+	"devDependencies": {
+		"@types/yargs": "^17.0.32",
+		"tsx": "^4.11.0"
+	}
 }
