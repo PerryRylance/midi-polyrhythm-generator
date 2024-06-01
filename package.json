@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@perry-rylance/midi": "^1.1.0",
+    "@types/node": "^20.12.12"
+  }
+}
